@@ -24,6 +24,7 @@
 - [Vim 安装、配置、快捷键列表](Vim-Install-And-Settings.md)
 - [Bash 命令](Bash.md)
 - [Bash 其他常用命令](Bash-Other-Bash.md)
+- [Sed 命令](Sed.md)
 - [Linux 下常用压缩文件的解压、压缩](File-Extract-Compress.md)
 - [Yum 下载安装包及对应依赖包](Off-line-Yum-Install.md)
 - [Zsh 入门](Zsh.md)
@@ -73,6 +74,8 @@
 - [Docker 安装和使用](Docker-Install-And-Usage.md)
 - [LDAP 安装和使用](LDAP-Install-And-Settings.md)
 - [Alfresco 安装和使用](Alfresco-Install-And-Usage.md)
+- [Apache Thrift 安装和使用](Thrift-Install-And-Usage.md)
+- [Node.js 安装和使用](Node-Install-And-Usage.md)
 
 
 ## 下一步(Next)
@@ -83,7 +86,6 @@
 - ActiveMQ 服务安装和配置
 - Zabbix 安装和配置
 - Nagios 安装和配置
-- Docker 安装和配置
 - sed 学习
 - 常用脚本
 

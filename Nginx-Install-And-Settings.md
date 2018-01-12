@@ -42,6 +42,15 @@
 > - Cache Manager 进程的主要任务：
     - 1.缓存的失效及过期检验；
 
+## Nginx 的 Docker 部署
+
+- 预设好目录，在宿主机上创建下面目录：`mkdir -p /data/nginx/html /data/nginx/conf.d /data/nginx/logs /data/nginx/conf`
+- 先准备好你的 nginx.conf 文件，存放在宿主机的：/data/nginx/conf 目录下，等下需要映射。
+- 下载镜像：`docker pull nginx:1.12.2`
+- 运行容器：`docker run --name cas-nginx -p 80:80 -v /data/nginx/html:/usr/share/nginx/html:ro -v /data/nginx/conf.d:/etc/nginx/conf.d -v /data/nginx/logs:/var/log/nginx -v /data/nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro -d nginx:1.12.2`
+- 重新加载配置（目前测试无效，只能重启服务）：`docker exec -it cas-nginx nginx -s reload`
+- 停止服务：`docker exec -it cas-nginx nginx -s stop` 或者：`docker stop cas-nginx`
+- 重新启动服务：`docker restart cas-nginx`
 
 
 ## Nginx 源码编译安装
@@ -55,7 +64,7 @@
     - 安装依赖包：`yum install -y gcc gcc-c++ pcre pcre-devel zlib zlib-devel openssl openssl-devel`
     - 预设几个文件夹，方便等下安装的时候有些文件可以进行存放：
         - `mkdir -p /usr/local/nginx /var/log/nginx /var/temp/nginx /var/lock/nginx`
-    - 下载源码包：``wget http://nginx.org/download/nginx-1.8.1.tar.gz`
+    - 下载源码包：`wget http://nginx.org/download/nginx-1.8.1.tar.gz`
     - 解压：`tar zxvf nginx-1.8.1.tar.gz`
     - 进入解压后目录：`cd nginx-1.8.1/`
     - 编译配置：
@@ -72,6 +81,7 @@
     --http-proxy-temp-path=/var/temp/nginx/proxy \
     --http-fastcgi-temp-path=/var/temp/nginx/fastcgi \
     --http-uwsgi-temp-path=/var/temp/nginx/uwsgi \
+    --with-http_ssl_module \
     --http-scgi-temp-path=/var/temp/nginx/scgi
     ```
 
@@ -432,6 +442,118 @@ http {
     }
 }
 ```
+
+### 配置 HTTPS 服务（SSL 证书配置）
+
+- 免费申请 SSL 证书渠道
+	- 教程：<https://www.wn789.com/4394.html> 
+	- SSL For Free：<https://www.sslforfree.com>
+	- 配置要点其实就是下面该图：
+- ![免费申请 SSL 证书渠道](images/Nginx-SSL-a-1.jpg)
+- 一般你会下载下面两个文件：`certificate.crt`，`private.key`
+- 如果你需要把 crt 和 key 的证书转换成 keystore（如果你有这个需求的话）
+- 从 key 和 crt 生成 pkcs12 格式的 keystore，生成过程会让人你输入密码，这个密码下面会用到，我这里假设输入 123456
+	- `openssl pkcs12 -export -in certificate.crt -inkey private.key -out youmeek.p12 -name youmeek -CAfile certificate.crt -caname -chain`
+	- `keytool -importkeystore -v -srckeystore youmeek.p12 -srcstoretype pkcs12 -srcstorepass 123456 -destkeystore youmeek.keystore -deststoretype jks -deststorepass 123456`  
+- 修改 nginx 配置文件，增加对 HTTPS 支持（下面的配置是基于默认安装 nginx 后的配置）
+- `vim /usr/local/nginx/conf/nginx.conf`
+
+
+```
+worker_processes  1;
+events {
+    worker_connections  1024;
+}
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+    
+    # 如果访问 http 也直接跳转到 https
+    server {
+        listen       80;
+        server_name sso.youmeek.com;
+        return 301 https://$server_name$request_uri;
+    }
+    
+    # crt 和 key 文件的存放位置根据你自己存放位置进行修改
+    server {
+        listen       443;
+        server_name  sso.youmeek.com;
+        ssl  on;
+        ssl_certificate     /opt/ssl/certificate.crt;
+        ssl_certificate_key /opt/ssl/private.key;
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+}
+
+```
+
+
+## Nginx 配置文件常用配置积累
+
+### location 配置
+
+
+``` nginx
+= 开头表示精确匹配
+^~ 开头表示uri以某个常规字符串开头，不是正则匹配
+~ 开头表示区分大小写的正则匹配;
+~* 开头表示不区分大小写的正则匹配
+/ 通用匹配, 如果没有其它匹配,任何请求都会匹配到
+
+location / {
+
+}
+
+location /user {
+
+}
+
+location = /user {
+
+}
+
+location /user/ {
+
+}
+
+location ^~ /user/ {
+
+}
+
+location /user/youmeek {
+
+}
+
+location ~ /user/youmeek {
+
+}
+
+location ~ ^(/cas/|/casclient1/|/casclient2/|/casclient3/) {
+
+}
+
+location ~ .*\.(gif|jpg|jpeg|png|bmp|swf|ico|woff|woff2|ttf|eot|txt)$ {
+
+}
+
+location ~ .*$ {
+
+}
+```
+
+
+
+
 
 ### HTTP 服务，绑定多个域名
 

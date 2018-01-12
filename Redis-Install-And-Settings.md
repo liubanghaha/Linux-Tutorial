@@ -1,6 +1,88 @@
 ## Redis 安装和配置
 
 
+## 如果你用 Spring Data MongoDB 依赖请注意
+
+- 请先看官网最新支持到哪个版本的依赖：<https://docs.spring.io/spring-data/data-redis/docs/current/reference/html/#new-features>
+	- 查看锚点为：`New in Spring Data Redis` 的内容
+- 目前 201712 支持 Redis 3.2
+
+## 如果你用 RedisDesktopManager 客户端请注意
+
+- 请查看介绍中支持哪个版本：<https://github.com/uglide/RedisDesktopManager>
+- 目前 201712 支持 2.8 以上
+
+## Docker 下安装 Redis
+
+- 创建一个宿主机目录用来存放 redis 配置文件：`mkdir -p /opt/conf/redis`
+- 创建一个宿主机以后用来存放数据的目录：`mkdir -p /data/redis/db`
+- 安装镜像：`docker pull redis:3.2`
+- 查看下载下来的镜像：`docker images`
+- 自己编写一个配置文件 `vim /opt/conf/redis/redis.conf`，内容如下：
+
+- Redis 默认的配置文件内容：
+
+``` ini
+bind 0.0.0.0
+requirepass casredis123456
+protected-mode yes
+port 6379
+tcp-backlog 511
+timeout 0
+tcp-keepalive 300
+daemonize no
+supervised no
+pidfile /data/redis_6379.pid
+loglevel notice
+logfile ""
+databases 16
+save 900 1
+save 300 10
+save 60 10000
+stop-writes-on-bgsave-error yes
+rdbcompression yes
+rdbchecksum yes
+dbfilename dump.rdb
+dir /data
+slave-serve-stale-data yes
+slave-read-only yes
+repl-diskless-sync no
+repl-diskless-sync-delay 5
+repl-disable-tcp-nodelay no
+slave-priority 100
+appendonly no
+appendfilename "appendonly.aof"
+appendfsync everysec
+no-appendfsync-on-rewrite no
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
+aof-load-truncated yes
+lua-time-limit 5000
+slowlog-log-slower-than 10000
+slowlog-max-len 128
+latency-monitor-threshold 0
+notify-keyspace-events ""
+hash-max-ziplist-entries 512
+hash-max-ziplist-value 64
+list-max-ziplist-size -2
+list-compress-depth 0
+set-max-intset-entries 512
+zset-max-ziplist-entries 128
+zset-max-ziplist-value 64
+hll-sparse-max-bytes 3000
+activerehashing yes
+client-output-buffer-limit normal 0 0 0
+client-output-buffer-limit slave 256mb 64mb 60
+client-output-buffer-limit pubsub 32mb 8mb 60
+hz 10
+aof-rewrite-incremental-fsync yes
+```
+
+- 启动镜像：`docker run -d -ti -p 6379:6379 -v /opt/conf/redis/redis.conf:/etc/redis/redis.conf -v /data/redis/db:/data --restart always --name cas-redis redis:3.2 redis-server /etc/redis/redis.conf`
+- 查看镜像运行情况：`docker ps`
+- 进入镜像中 redis shell 交互界面：`docker exec -it 0cdc76fef7b4 redis-cli -h 127.0.0.1 -p 6379 -a casredis123456`
+- 重新启动服务：`docker restart cas-redis`
+
 
 ## Redis 安装
 
@@ -167,7 +249,7 @@ aof-rewrite-incremental-fsync yes
 	- 原因：Redis 默认只允许本机访问，可是有时候我们也需要 Redis 被远程访问。         
 	- 解决办法：
         - 修改 Redis 配置文件：`vim /etc/redis.conf`
-        - 找到 bind 那行配置，默认是：`# bind 127.0.0.1`
+        - 找到 bind 那行配置，默认是（需要注意的是配置文件中除了注释还有一个默认开启的地方，所以不要漏掉）：`# bind 127.0.0.1`
         - 去掉 # 注释并改为：`bind 0.0.0.0`
 
 ## Redis 常用命令
@@ -338,6 +420,30 @@ esac
 - Redis 主从从的意思：看桌面上的截图。
 - 优点，除了减少主库连接的压力，还有可以关掉主库的持久化功能，把持久化的功能交给从库进行处理。
 - 第一个从库配置的信息是连上主库，后面的第二个从库配置的连接信息是连上第一个从库， 假如还有第三个从库的话，我们可以把第三个从库的配置信息连上第二个从库上，以此类推。
+
+
+## Redis 3 主 2 从 3 哨兵--配置集群+HA（高可用、故障转移）
+
+- 3 主 2 从 3 哨兵（平均每台机子是：1 主 2 从 3 哨兵）
+- 一个健康的集群部署，至少需要 3 个 Sentinel 实例，官网（Example 2: basic setup with three boxes）：<https://redis.io/topics/sentinel>
+- 这里使用了 3 台阿里云服务器，系统：CentOS 6.8
+- 3 主：
+
+```
+192.168.1.1
+```
+
+先做 Redis 集群，然后写个 Spring Data Redis 测试是否可以正常使用该集群
+
+
+
+
+
+- 每台服务器各有一个 Redis 程序，然后有 3 个不同配置文件，启动 Redis 的时候指定各自的配置文件，依次表示 3 个 Redis 程序。
+- 先关闭防火墙，避免各种端口未开放问题
+- Redis 目前支持主从复制，但是主挂掉后，从也只能只读，所以需要在主挂掉后，从一个其中一个从节点中升级到主，这里用到的是：redis sentinel
+- 漂移 IP 这里用到 keepalived
+
 
 
 ## Windows 版本的 Redis

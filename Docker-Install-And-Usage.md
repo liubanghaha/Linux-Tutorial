@@ -55,8 +55,8 @@
  
 - 主要有两个版本：
  
-> Docker Enterprise Edition (Docker EE) is designed for enterprise development and IT teams who build, ship, and run business critical applications in production at scale. Docker EE is integrated, certified, and supported to provide enterprises with the most secure container platform in the industry to modernize all applications. For more information about Docker EE, including purchasing options, see Docker Enterprise Edition.
-Docker Community Edition (Docker CE) is ideal for developers and small teams looking to get started with Docker and experimenting with container-based apps. Docker CE is available on many platforms, from desktop to cloud to server. Docker CE is available for macOS and Windows and provides a native experience to help you focus on learning Docker. You can build and share containers and automate the development pipeline all from a single environment.
+> **Docker Enterprise Edition (Docker EE)** is designed for enterprise development and IT teams who build, ship, and run business critical applications in production at scale. Docker EE is integrated, certified, and supported to provide enterprises with the most secure container platform in the industry to modernize all applications. For more information about Docker EE, including purchasing options, see Docker Enterprise Edition.
+**Docker Community Edition (Docker CE)** is ideal for developers and small teams looking to get started with Docker and experimenting with container-based apps. Docker CE is available on many platforms, from desktop to cloud to server. Docker CE is available for macOS and Windows and provides a native experience to help you focus on learning Docker. You can build and share containers and automate the development pipeline all from a single environment.
 Docker CE has both stable and edge channels.
     Stable builds are released once per quarter and are supported for 4 months.
     Edge builds are released once per month, and are supported for that month only. If you subscribe to the Edge channel on Linux distributions, you should also subscribe to the Stable channel.
@@ -64,18 +64,13 @@ Docker CE has both stable and edge channels.
  
 - 官网总的安装手册：<https://docs.docker.com/engine/installation/#docker-editions>
 - 官网 CentOS 安装手册：<https://docs.docker.com/engine/installation/linux/centos/>
- 
+- 目前也支持 Windows，特别是 Windows 10，直接官网一个安装包即可搞定。
+- Windows 10 的 Docker 安装说明：<https://store.docker.com/editions/community/docker-ce-desktop-windows>
 - 我这里选择 Docker CE 版本：
-- 安装过程：
-    - `sudo yum install -y yum-utils`
- 
-    ``` bash
-   ：添加 repo（可能网络会很慢，有时候会报：Timeout，所以要多试几次）
-    sudo yum-config-manager \
-        --add-repo \
-        https://download.docker.com/linux/centos/docker-ce.repo
-    ```
- 
+- CentOS 安装过程：
+    - `sudo yum install -y yum-utils device-mapper-persistent-data lvm2`
+    - 添加 repo（可能网络会很慢，有时候会报：Timeout，所以要多试几次）
+    - `sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo`
     - `sudo yum makecache fast`
     - `sudo yum install -y docker-ce`，大小：19M，速度很慢。
 - 启动 Docker：`systemctl start docker.service`
@@ -221,6 +216,7 @@ java -jar /root/spring-boot-my-demo.jar
     - `docker rmi 容器ID`：删除具体某一个镜像
     - `docker rmi 仓库:Tag`：删除具体某一个镜像
     - `docker rmi $(docker images -q)`，删除所有镜像
+    - `docker rmi -f $(docker images -q)`，强制删除所有镜像
 - `docker tag`：为镜像打上标签
 	- `docker tag -f ubuntu:14.04 ubuntu:latest`，-f 意思是强制覆盖
 	- 同一个IMAGE ID可能会有多个TAG（可能还在不同的仓库），首先你要根据这些 image names 来删除标签，当删除最后一个tag的时候就会自动删除镜像；
@@ -283,7 +279,7 @@ java -jar /root/spring-boot-my-demo.jar
 - `docker stop`
 - `docker restart`
 - `docker kill 容器ID/容器名称`，
-- `docker rm`，删除容器
+- `docker rm`，删除容器，一般报类似错误就需要这样做：`docker: Error response from daemon: Conflict. The container name XXXXX`
     - `docker rm 容器ID`，删除指定容器（该容器必须是停止的）
     - `docker rm -f 容器ID`，删除指定容器（该容器可以是正在运行的）
     - `docker rm $(docker ps -a -q)`，删除所有容器

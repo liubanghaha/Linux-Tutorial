@@ -13,9 +13,24 @@
 - RabbitMQ 文档：
     - 优先：<http://www.rabbitmq.com/getstarted.html>
     - 次要：<http://www.rabbitmq.com/documentation.html>
+ 
+## 基于 epel 源进行安装（优先）
 
+- 来源：<http://blog.csdn.net/wh211212/article/details/53893085>
 
-## 先安装 Erlang
+```
+rpm -Uvh http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
+
+# 安装依赖环境erlang
+yum install erlang -y
+
+# 安装rabbitmq
+yum install rabbitmq-server -y
+```
+
+## 本地安装
+
+#### 本地安装 Erlang
 
 - 有 EPEL 源的情况（需要安装的内容较多，宽带要能跟上）：`sudo yum install erlang`
 - RabbitMQ 官网提供 Erlang 安装包：
@@ -25,7 +40,7 @@
         - `sudo yum localinstall -y esl-erlang-compat-18.1-1.noarch.rpm`
 
 
-## 安装 RabbitMQ
+#### rpm 安装 RabbitMQ
 
 - 此时（2016-04），最新版：**3.6.1**
 - 安装：`rpm --import https://www.rabbitmq.com/rabbitmq-signing-key-public.asc`
@@ -37,7 +52,7 @@
     - 停止：`service rabbitmq-server stop`
     - 重启：`service rabbitmq-server restart`
 	- 设置开机启动：`chkconfig rabbitmq-server on`
-    
+
 
 ## 配置
 
@@ -48,6 +63,7 @@
 	- 在 64 行，默认有这样一句话：`%% {loopback_users, []},`，注意，该语句最后有一个逗号，等下是要去掉的
 	- 我们需要改为：`{loopback_users, []}`，
 - 开启 Web 界面管理：`rabbitmq-plugins enable rabbitmq_management`
+	- 如果你是用 epel 安装的话，则是这样运行：`cd /usr/lib/rabbitmq/bin;./rabbitmq-plugins enable rabbitmq_management`
 - 重启 RabbitMQ 服务：`service rabbitmq-server restart`
 - 开放防火墙端口：
 	- `sudo iptables -I INPUT -p tcp -m tcp --dport 15672 -j ACCEPT`

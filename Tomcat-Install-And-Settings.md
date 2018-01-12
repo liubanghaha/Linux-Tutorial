@@ -9,7 +9,7 @@
     - 此时（20160207） Tomcat 8 最新版本为：`apache-tomcat-8.0.32.tar.gz`
     - 我个人习惯 `/opt` 目录下创建一个目录 `setups` 用来存放各种软件安装包；在 `/usr` 目录下创建一个 `program` 用来存放各种解压后的软件包，下面的讲解也都是基于此习惯
     - 我个人已经使用了第三方源：`EPEL、RepoForge`，如果你出现 `yum install XXXXX` 安装不成功的话，很有可能就是你没有相关源，请查看我对源设置的文章
-    - Tomcat 8 下载：`wget http://apache.fayea.com/tomcat/tomcat-8/v8.0.32/bin/apache-tomcat-8.0.32.tar.gz`
+    - Tomcat 8 下载（201706 更新：旧版本失效）：`wget http://apache.fayea.com/tomcat/tomcat-8/v8.0.44/bin/apache-tomcat-8.0.44.tar.gz`
     - 压缩包解压：`tar -zxvf apache-tomcat-8.0.32.tar.gz`
     - 移到解压出来文件夹到 /usr 下：`mv apache-tomcat-8.0.32/ /usr/program/`
     - 为了方便，修改解压目录的名字：`mv /usr/program/apache-tomcat-8.0.32/ /usr/program/tomcat8/`
@@ -171,8 +171,8 @@
 	-Xmn1024m：设置JVM新生代大小（JDK1.4之后版本）。一般-Xmn的大小是-Xms的1/2左右，不要设置的过大或过小，过大导致老年代变小，频繁Full GC，过小导致minor GC频繁。如果不设置-Xmn，可以采用-XX:NewRatio=2来设置，也是一样的效果
 	-XX:NewSize：设置新生代大小
 	-XX:MaxNewSize：设置最大的新生代大小
-	-XX:PermSize：设置永久代大小
-	-XX:MaxPermSize：设置最大永久代大小
+	-XX:PermSize：设置永久代大小（在 Tomcat8 移出了该参数）
+	-XX:MaxPermSize：设置最大永久代大小（在 Tomcat8 移出了该参数）
 	-XX:NewRatio=4：设置年轻代（包括 Eden 和两个 Survivor 区）与终身代的比值（除去永久代）。设置为 4，则年轻代与终身代所占比值为 1：4，年轻代占整个堆栈的 1/5
 	-XX:MaxTenuringThreshold=10：设置垃圾最大年龄，默认为：15。如果设置为 0 的话，则年轻代对象不经过 Survivor 区，直接进入年老代。对于年老代比较多的应用，可以提高效率。如果将此值设置为一个较大值，则年轻代对象会在 Survivor 区进行多次复制，这样可以增加对象再年轻代的存活时间，增加在年轻代即被回收的概论。需要注意的是，设置了 -XX:MaxTenuringThreshold，并不代表着，对象一定在年轻代存活15次才被晋升进入老年代，它只是一个最大值，事实上，存在一个动态计算机制，计算每次晋入老年代的阈值，取阈值和MaxTenuringThreshold中较小的一个为准。
 	-XX:+DisableExplicitGC：这个将会忽略手动调用 GC 的代码使得 System.gc() 的调用就会变成一个空调用，完全不会触发任何 GC

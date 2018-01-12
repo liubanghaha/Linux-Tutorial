@@ -3,14 +3,52 @@
 
 ## 基础概念
 
-MongoDB 元素概念
+- MongoDB 元素概念
 	- databases: 数据库;
-	- collections:表；（colloections组成了databases）
+	- collections:表；（collections组成了databases）
 	- documents:行；（documents组成了collections）
 - MongoDB 没有新建数据库的命令，只要进行 insert 或其它操作，MongoDB 就会自动帮你建立数据库和 collection。当查询一个不存在的 collection 时也不会出错，MongoDB 会认为那是一个空的 collection。
 - 一个对象被插入到数据库中时，如果它没有 ID，会自动生成一个 "_id" 字段，为 12 字节(24位)16进制数。
 - 当然如果插入文档不带 _id，则系统会帮你自动创建一个，如果自己指定了就用自己指定的。
 
+## 如果你用 Spring Data MongoDB 依赖请注意
+
+- 请先看官网最新支持到哪个版本的依赖：<https://docs.spring.io/spring-data/mongodb/docs/current/reference/html/#new-features>
+	- 查看锚点为：`What’s new in Spring Data MongoDB` 的内容，比如：What’s new in Spring Data MongoDB 1.10，出现这样一句话：`Compatible with MongoDB Server 3.4 and the MongoDB Java Driver 3.4`
+- 目前 201712 支持 MongoDB 3.4
+
+## 如果你用 Robomongo 客户端请注意
+
+- 请查看介绍中支持哪个版本：<https://robomongo.org/download>
+- 目前 201712 支持 MongoDB 3.4
+
+
+## Docker 下安装 MongoDB
+
+- 先创建一个宿主机以后用来存放数据的目录：`mkdir -p /data/mongo/db`
+- 安装镜像：`docker pull mongo:3.4`
+- 查看下载下来的镜像：`docker images`
+- 首次运行镜像：`docker run -p 27017:27017 -v /data/mongo/db:/data/db -d mongo:3.4`
+- 查看容器运行情况：`docker ps`
+- 进入容器中 mongo shell 交互界面：`docker exec -it 09747cd7d0bd mongo casdb`
+- 创建一个用户：
+
+```
+db.createUser(
+    {
+        user: "casuser",
+        pwd: "casuser123456",
+        roles: [ 
+            { role: "dbAdmin", db: "casdb" },
+            { role: "readWrite", db: "casdb" }
+        ]
+    }
+)
+```
+
+- 然后停掉容器：`docker stop 09747cd7d0bd`
+- 重新运行镜像，这次增加需要授权才能访问的配置：`docker run -d -p 27017:27017 -v /data/mongo/db:/data/db --restart always --name cas-mongo mongo:3.4 --auth`
+- 重新启动服务：`docker restart cas-mongo`
 
 
 ## 安装环境
@@ -23,47 +61,191 @@ MongoDB 元素概念
 	- 编辑配置文件：`vim /etc/selinux/config`
 	- 把 `SELINUX=enforcing` 改为 `SELINUX=disabled`
 - MongoDB 安装
-    - 官网：<https://www.mongodb.com>
-    - 官网文档：<https://docs.mongodb.com/manual/reference/method/>
-    - 此时（20170228） 最新稳定版本为：**3.4.2**
-    - 官网下载：<https://www.mongodb.com/download-center?jmp=nav#community>
-    - 官网安装方法介绍：<https://docs.mongodb.com/master/tutorial/install-mongodb-on-red-hat/>
-    - 官网使用的 Package 的安装方式，还有下载 tar 包的方法，如果需要 tar 包方式可以看这篇文章：<https://itjh.net/2016/07/11/centos-install-mongodb/>
-	- 我这里使用官网的方式：
-		- 新建文件：`vim /etc/yum.repos.d/mongodb-org-3.4.repo`，文件内容如下：
-		
-		``` bash
-		[mongodb-org-3.4]
-        name=MongoDB Repository
-        baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.4/x86_64/
-        gpgcheck=1
-        enabled=1
-        gpgkey=https://www.mongodb.org/static/pgp/server-3.4.asc
-		```
-		- 如果你要安装 2.6 的版本，可以使用下面这个内容：
-		
-		``` bash
-		[mongodb-org-2.6]
-        name=MongoDB 2.6 Repository
-        baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/
-        gpgcheck=0
-        enabled=1
-		```
-		- 上面文件新建好之后，输入安装命令：`yum install -y mongodb-org`，一共有 5 个包，加起来有 100M 左右，国内下载速度不快，需要等等，可能还会出错，如果出错用国内源：<https://mirror.tuna.tsinghua.edu.cn/help/mongodb/>
-		- 开放防火墙端口：
-	        - `iptables -A INPUT -p tcp -m tcp --dport 27017 -j ACCEPT`
-	        - `service iptables save`
-	        - `service iptables restart`
-- 其他常用命令：
-	- 检查版本：`mongod --version`
-	- 启动：`service mongod start`
-	- 停止：`service mongod stop`
-	- 重启：`service mongod restart`
-	- 添加自启动：`chkconfig mongod on`
-	- 进入客户端：`mongo`，如果有授权用户格式为：`mongo 127.0.0.1:27017/admin -u 用户名 -p 用户密码`
-	- 卸载命令：`yum erase $(rpm -qa | grep mongodb-org)`
-		- 删除数据库：`rm -r /var/lib/mongo`
-	    - 删除 log：`rm -r /var/log/mongodb`
+	- 官网：<https://www.mongodb.com>
+	- 官网文档：<https://docs.mongodb.com/manual/reference/method/>
+	- 此时（20170228） 最新稳定版本为：**3.4.2**
+	- 官网下载：<https://www.mongodb.com/download-center?jmp=nav#community>
+	- 官网安装方法介绍：<https://docs.mongodb.com/master/tutorial/install-mongodb-on-red-hat>
+	- 官网文档使用的 Package 的安装方式。还有一种安装方式是下载 tar 包的方法，如果需要 tar 包方式可以看这篇文章：
+		- <https://itjh.net/2016/07/11/centos-install-mongodb>
+
+### yum 卸载
+
+- `yum remove "mongodb-org-*"`
+
+### 3.4.2 yum 安装
+
+- 新建文件：`vim /etc/yum.repos.d/mongodb-org-3.4.repo`，文件内容如下：
+
+``` bash
+[mongodb-org-3.4]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.4/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-3.4.asc
+```
+- 如果你要安装 2.6 的版本，可以使用下面这个内容：
+
+``` bash
+[mongodb-org-2.6]
+name=MongoDB 2.6 Repository
+baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/
+gpgcheck=0
+enabled=1
+```
+- 上面文件新建好之后，输入安装命令：`yum install -y mongodb-org`，一共有 5 个包，加起来有 100M 左右，国内下载速度不快，需要等等，可能还会出错，如果出错用国内源：<https://mirror.tuna.tsinghua.edu.cn/help/mongodb/>
+- 开放防火墙端口：
+    - `iptables -A INPUT -p tcp -m tcp --dport 27017 -j ACCEPT`
+    - `service iptables save`
+    - `service iptables restart`
+
+### 3.6 yum 安装：
+
+- 新建文件：`vim /etc/yum.repos.d/mongodb-org-3.6.repo`，文件内容如下：
+
+``` bash
+[mongodb-org-3.6]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/testing/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-3.6.asc
+```
+- 上面文件新建好之后，输入安装命令：`yum install -y mongodb-org`，一共有 5 个包，加起来有 100M 左右，国内下载速度不快，需要等等，可能还会出错，如果出错用国内源：<https://mirror.tuna.tsinghua.edu.cn/help/mongodb/>
+- 开放防火墙端口：
+    - `iptables -A INPUT -p tcp -m tcp --dport 27017 -j ACCEPT`
+    - `service iptables save`
+    - `service iptables restart`
+
+### 3.4.10 tar 绿色安装
+
+- 下载：`wget https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-rhel62-3.4.10.tgz`
+- 解压到指定目录，并重命名：
+
+```
+tar zxvf mongodb-linux-x86_64-rhel62-3.4.10.gz
+
+mv mongodb-linux-x86_64-rhel62-3.4.10 mongodb
+
+mv mongodb /usr/program
+```
+
+- 增加系统变量，我这里是用 zsh
+
+```
+vim ~/.zshrc 
+
+export MONGODB_HOME=/usr/program/mongodb
+export PATH=$MONGODB_HOME/bin:$PATH
+
+source ~/.zshrc
+```
+
+- 测试是否安装成功：`mongod -v`，安装成功会得到如下信息：
+
+```
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten] MongoDB starting : pid=31155 port=27017 dbpath=/data/db 64-bit host=youmeek
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten] db version v3.4.10
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten] git version: 078f28920cb24de0dd479b5ea6c66c644f6326e9
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten] OpenSSL version: OpenSSL 1.0.1e-fips 11 Feb 2013
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten] allocator: tcmalloc
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten] modules: none
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten] build environment:
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten]     distmod: rhel62
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten]     distarch: x86_64
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten]     target_arch: x86_64
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten] options: { systemLog: { verbosity: 1 } }
+2017-12-03T00:08:09.854+0800 D -        [initandlisten] User Assertion: 29:Data directory /data/db not found. src/mongo/db/service_context_d.cpp 98
+2017-12-03T00:08:09.854+0800 I STORAGE  [initandlisten] exception in initAndListen: 29 Data directory /data/db not found., terminating
+2017-12-03T00:08:09.854+0800 I NETWORK  [initandlisten] shutdown: going to close listening sockets...
+2017-12-03T00:08:09.854+0800 I NETWORK  [initandlisten] shutdown: going to flush diaglog...
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten] now exiting
+2017-12-03T00:08:09.854+0800 I CONTROL  [initandlisten] shutting down with code:100
+```
+
+- 创建数据库、日志存放目录：
+
+```
+mkdir -p /usr/program/mongodb/data
+mkdir -p /usr/program/mongodb/log
+touch /usr/program/mongodb/log/mongodb.log
+```
+
+- 创建配置文件：`vim /etc/mongodb.conf`，并写入内容：
+
+```
+dbpath=/usr/program/mongodb/data
+logpath=/usr/program/mongodb/log/mongodb.log
+logappend=true
+port=27017
+fork=true
+```
+
+- 看下是否已经有 mongo 在运行，如果有就 kill 掉：`ps -ef | grep mongo`
+- 通过配置文件启动：`mongod -f /etc/mongodb.conf`
+- 显示下面信息则表示启动了：
+
+```
+about to fork child process, waiting until server is ready for connections.
+forked process: 29167
+child process started successfully, parent exiting
+```
+
+- 进入 MongoDB 后台管理 Shell：`cd /usr/program/mongodb/bin && ./mongo`
+- 创建数据库：
+
+```
+use youmeek
+```
+
+- 创建用户，并授权，需要注意的是：dbAdmin 的权限是没有包含 readWrite，所以很多时候要根据需求添加多个权限：
+
+```
+db.createUser(
+    {
+        user: "youmeek",
+        pwd: "youmeek123456",
+        roles: [ 
+            { role: "dbAdmin", db: "youmeek" },
+            { role: "readWrite", db: "youmeek" }
+        ]
+    }
+)
+```
+
+- 开放防火墙端口：
+
+```
+iptables -A INPUT -p tcp -m tcp --dport 27017 -j ACCEPT
+service iptables save
+service iptables restart
+```
+
+- 修改配置文件：`vim /etc/mongodb.conf`，在文件最后面增加一行：
+
+```
+auth=true
+```
+
+- 表示开启用户认证，这样后面要连接 mongo 就必须输入数据库、用户名、密码。
+- 然后重启 mongo，开始使用。
+
+
+## 其他常用命令：
+
+- 检查版本：`mongod --version`
+- 启动：`service mongod start`
+- 停止：`service mongod stop`
+- 重启：`service mongod restart`
+- 添加自启动：`chkconfig mongod on`
+- 进入客户端：`mongo`，如果有授权用户格式为：`mongo 127.0.0.1:27017/admin -u 用户名 -p 用户密码`
+- 卸载命令：`yum erase $(rpm -qa | grep mongodb-org)`
+	- 删除数据库：`rm -r /var/lib/mongo`
+    - 删除 log：`rm -r /var/log/mongodb`
+- 数据的导出、导入
+	- 导出：`mongoexport -h 127.0.0.1 -u 用户名 -p 密码 -d 库名 -c 集合名 -o /opt/mongodb.json --type json`
+	- 导入：`mongoimport -h 127.0.0.1 -u 用户名 -p 密码 -d 库名 -c 集合名 --file /opt/mongodb.json --type json`
 
 ## 添加授权用户
 
@@ -83,7 +265,7 @@ db.createUser(
 - 修改密码：`db.changeUserPassword(用户名, 密码)`
 - 删除用户：` db.removeUser(用户名)`
 - 内置角色：
-	- Read：允许用户读取指定数据库
+	- read：允许用户读取指定数据库
 	- readWrite：允许用户读写指定数据库
 	- dbAdmin：允许用户在指定数据库中执行管理函数，如索引创建、删除，查看统计或访问system.profile
 	- userAdmin：允许用户向system.users集合写入，可以找指定数据库里创建、删除和管理用户
